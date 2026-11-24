@@ -88,6 +88,7 @@ typedef struct
  * It only shortens the work if you use auto-complete
  */
 #define gfc_vector3d_to_slog(vec) vec.x,vec.y,vec.z
+#define gfc_vector4d_to_slog(vec) vec.x,vec.y,vec.z,vec.w
 
 /**
  * @brief create and return an GFC_Vector2D
@@ -599,5 +600,18 @@ void gfc_vector2d_move_towards(GFC_Vector2D *out, GFC_Vector2D point, GFC_Vector
  * @param in the input vector.
  */
 void gfc_vector3d_randomize(GFC_Vector3D *out,GFC_Vector3D in);
+
+// Laser 
+GFC_Vector3D gfc_vector3d_scaled_by_3D(GFC_Vector3D a, GFC_Vector3D b);
+
+GFC_Vector3D gfc_vector3d_scaled(GFC_Vector3D a, float factor);
+
+void gfc_vector4d_rotate_by_degrees(GFC_Vector4D* vect, GFC_Vector3D up, float degrees);
+
+void rotate_vector_around_axis(GFC_Vector3D* dst, GFC_Vector3D axis, GFC_Vector3D point, float degrees);
+
+void gfc_vector4d_rotate_world_by_degrees(GFC_Vector4D* vect, GFC_Vector3D axis,float degrees);
+
+void gfc_quaternion_align_up(GFC_Vector4D* quaternion, GFC_Vector3D currentUp, GFC_Vector3D targetUp);
 
 #endif

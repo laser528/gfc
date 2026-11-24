@@ -313,5 +313,9 @@ GFC_Triangle3D gfc_triangle_from_config(SJson *config);
  * }
  */
 GFC_Edge3D gfc_edge_from_config(SJson *config);
+//
+
+// Laser
+
 
 #endif

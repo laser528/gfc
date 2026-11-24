@@ -755,4 +755,9 @@ GFC_Primitive gfc_primitive_from_config(SJson *config)
     }
     return primitive;
 }
+
+// Laser
+
+
+
 /*eol@eof*/

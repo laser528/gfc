@@ -550,6 +550,9 @@ void gfc_vector3d_rotate_about_vector(GFC_Vector3D *dst, GFC_Vector3D dir, GFC_V
   dst->z = rot[2][0] * point.x + rot[2][1] * point.y + rot[2][2] * point.z;
 }
 
+
+
+
 void gfc_vector3d_rotate_about_x(GFC_Vector3D *vect, float angle)
 {
   GFC_Vector3D temp;
@@ -865,6 +868,138 @@ void gfc_vector3d_randomize(GFC_Vector3D *out,GFC_Vector3D in)
     out->x = in.x * gfc_crandom();
     out->y = in.y * gfc_crandom();
     out->z = in.z * gfc_crandom();
+}
+// Laser
+GFC_Vector3D gfc_vector3d_scaled_by_3D(GFC_Vector3D a, GFC_Vector3D b) {
+    return gfc_vector3d(
+        a.x * b.x,
+        a.y * b.y,
+        a.z * b.z
+    );
+}
+
+GFC_Vector3D gfc_vector3d_scaled(GFC_Vector3D a, float factor) {
+    return gfc_vector3d(a.x * factor, a.y * factor, a.z * factor);
+}
+
+// https://irrlicht.sourceforge.io/docu/quaternion_8h_source.html
+GFC_Vector4D gfc_quaternion_multiply(GFC_Vector4D a, GFC_Vector4D b)
+{
+    return gfc_vector4d(
+        a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+        a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+        a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+        a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+    );
+}
+
+void gfc_vector4d_rotate_by_degrees(GFC_Vector4D* vect, GFC_Vector3D up, float degrees) {
+    GFC_Vector3D upCpy;
+    float hTheata = (degrees * GFC_DEGTORAD) * 0.5f;
+
+    gfc_vector3d_copy(upCpy, up);
+    gfc_vector3d_normalize(&upCpy);
+    
+    GFC_Vector4D rotation = gfc_vector4d(
+        upCpy.x * sinf(hTheata),
+        upCpy.y * sinf(hTheata),
+        upCpy.z * sinf(hTheata),
+        cosf(hTheata)
+    );
+    *vect = gfc_quaternion_multiply(*vect, rotation);
+
+}
+
+void rotate_vector_around_axis(
+    GFC_Vector3D* dst,
+    GFC_Vector3D axis,
+    GFC_Vector3D point,
+    float degrees
+)
+{
+    if (!dst) return;
+    float length, dot, theta, cos, sin;
+    GFC_Vector3D cross, result;
+
+
+    length = gfc_vector3d_magnitude(axis);
+
+    if (length < 0.000001f) {
+        *dst = point;
+        return;
+    }
+
+    gfc_vector3d_normalize(&axis);
+
+
+    theta = degrees * GFC_DEGTORAD;
+    cos = cosf(theta);
+    sin = sinf(theta);
+
+    gfc_vector3d_cross_product(&cross, axis, point);
+    dot = gfc_vector3d_dot_product(axis, point);
+
+
+    // Rodrigues formula
+    result.x = point.x * cos + cross.x * sin + axis.x * dot * (1.0f - cos);
+    result.y = point.y * cos + cross.y * sin + axis.y * dot * (1.0f - cos);
+    result.z = point.z * cos + cross.z * sin + axis.z * dot * (1.0f - cos);
+
+    *dst = result;
+}
+
+void gfc_vector4d_rotate_world_by_degrees(GFC_Vector4D* vect, GFC_Vector3D axis, float degrees) {
+    if (!vect) return;
+
+    if (gfc_vector3d_magnitude(axis) < 0.000001f)
+        return;
+
+    gfc_vector3d_normalize(&axis);
+
+    float halfAngle = degrees * GFC_DEGTORAD * 0.5f;
+
+    GFC_Vector4D rotation = gfc_vector4d(
+        axis.x * sinf(halfAngle),
+        axis.y * sinf(halfAngle),
+        axis.z * sinf(halfAngle),
+        cosf(halfAngle)
+    );
+
+    *vect = gfc_quaternion_multiply(rotation, *vect);
+}
+
+void gfc_quaternion_align_up(GFC_Vector4D* quaternion, GFC_Vector3D currentUp, GFC_Vector3D targetUp) {
+    if (!quaternion) return;
+
+    if (gfc_vector3d_magnitude(currentUp) < 0.000001f || gfc_vector3d_magnitude(targetUp) < 0.000001f)
+        return;
+
+    gfc_vector3d_normalize(&currentUp);
+    gfc_vector3d_normalize(&targetUp);
+
+    float dot = gfc_vector3d_dot_product(currentUp, targetUp);
+    dot = fmaxf(-1.0f, fminf(1.0f, dot));
+
+    
+    if (dot > 0.999999f)
+        return;
+
+    GFC_Vector3D axis;
+    float angle;
+
+    if (dot < -0.999999f) {
+        GFC_Vector3D reference = gfc_vector3d(1, 0, 0);
+        if (fabsf(currentUp.x) > 0.9f) reference = gfc_vector3d(0, 1, 0);
+        gfc_vector3d_cross_product(&axis, currentUp, reference);
+        angle = 180.0f;
+    }
+    else {
+        gfc_vector3d_cross_product(&axis, currentUp, targetUp);
+        angle = acosf(dot) / GFC_DEGTORAD;
+    }
+
+    gfc_vector3d_normalize(&axis);
+    gfc_vector4d_rotate_world_by_degrees(quaternion, axis, angle );
 }
 
 /*eol@eof*/
